@@ -1,0 +1,7 @@
+config BASIC_TESTS
+	bool "Basic tests"
+	depends on DUT_IODEPTH_RANGE
+	help
+	  This enables basic tests: for each IODEPTH 1 .. 4096
+	  build tests for each profile we want to analyze. Only
+	  one job is used.

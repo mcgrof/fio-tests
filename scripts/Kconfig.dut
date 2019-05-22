@@ -1,0 +1,378 @@
+menu "Device Under Test configuration"
+
+config DUT_FILENAME
+	string "Device/filename"
+	default "$(DEV)"
+	help
+	  If /dev/nvme0n1 is set, this sets the fio filename=/dev/nvme0n1 value.
+
+	  The target raw device to test, or filename prefix to use. This will
+	  will set the fio filename parameter. If you want to test multiple
+	  devices you can separate them with a colon for instance the following
+	  /dev/nvme0n1:/dev/nvme1n1 and /dev/sda:/dev/sdb are valid.
+
+	  For more details on filename refer to the fio(1) manpage.
+
+config DUT_BLOCKSIZE
+	string "Blocksize"
+	default "4k"
+	help
+	  If 4k is set, this sets the fio bs=4k value.
+
+	  The block size in bytes used for I/O units. Default: 4096 bytes.
+	  A single value applies to reads, writes, and trims. Comma-separated
+	  values may be specified for reads, writes, and trims. A value not
+	  terminated in a comma applies to subsequent types. Examples:
+
+	  256k        means 256k for reads, writes and trims.
+	  8k,32k      means 8k for reads, 32k for writes and trims.
+	  8k,32k,     means 8k for reads, 32k for writes, and default for trims.
+	  ,8k         means default for reads, 8k for writes and trims.
+	  ,8k,        means default for reads, 8k for writes, and default for trims.
+
+	  For more details on bs refer to the fio(1) manpage.
+
+config DUT_IOSIZE
+	string "Active Range / Total IO Size"
+	default "100%" if !DEBUG_QUICK_DEFAULTS && ENTERPRISE_SSD_TESTING
+	default "75%" if !DEBUG_QUICK_DEFAULTS && !ENTERPRISE_SSD_TESTING
+	default DEBUG_ACTIVE_RANGE if DEBUG_QUICK_DEFAULTS
+	help
+	  If 4G is set, this sets the fio size=4G value.
+
+	  The  total  size of file I/O for each thread of this job. Fio will
+	  run until this many bytes has been transferred, unless runtime is
+	  limited by other options (such as runtime, for instance). Example
+	  values are 4G to indicate to use only 4 GB, or 20% to indicate to use
+	  only up to 20% of the disk capacity.
+
+	  For more details on size refer to the fio(1) manpage.
+
+config DUT_RAMP_TIME
+	string "Ramp time"
+	default "0s"
+	help
+	  If 30s is set, this sets the fio ramp_time=30s value -- 30 seconds.
+
+	  Tell fio to run the specified workload for this amount of time before
+	  logging any performance numbers, but NOTE: this does not affect fio
+	  terse output, so this is only useful when supporting log file formats.
+
+	  Supported input values are can be in hours, minutes, or seconds.
+
+	  For more details on ramp_time refer to the fio(1) manpage.
+
+config DUT_IODEPTH_RANGE
+	bool "IO depth range"
+	default y
+	help
+	  There are a series of basic tests which work on a range of fio
+	  iodepth=x values. You must set this range to enable such tests.
+
+	  For tests that require this range, a test is created for each iodepth
+	  number in between the minimum and maximum value, by powers of 2. So if
+	  DUT_TEST_MIN_IODEPTH is 1028 and max is 4096 there will be tests for
+	  1024, 2048 and 4096.
+
+if DUT_IODEPTH_RANGE
+
+config DUT_TEST_MIN_IODEPTH
+	string "Minimum IO Depth to test"
+	default "1"
+	help
+	  This sets the mimimum value to be used in tests for the fio iodepth.
+	  For instance, if set to 1, the mimimum value which will be used for
+	  iodepth will be iodepth=1.
+
+	  The fio iodepth defines the number I/O units to keep in flight against
+	  the file. There are number of tests in this tests suite which are
+	  created with different iodepth size on each test. This value will set
+	  the smallest value to consider testing for iodepth.
+
+	  For more details on iodepth refer to the fio(1) manpage.
+
+config DUT_TEST_MAX_IODEPTH
+	string "Maximum IO Depth to test"
+	default "4096"
+	help
+	  This sets the maximum value to be used in tests for the fio iodepth.
+	  For instance, if set to 4096, the maximum value which will be used for
+	  iodepth will be iodepth=4096.
+
+	  The fio iodepth defines the number I/O units to keep in flight against
+	  the file. There are number of tests in this tests suite which are
+	  created with different iodepth size on each test. This value will set
+	  the smallest value to consider testing for iodepth. A test is created
+	  for each iodepth number in between the minimum and maximum value, by
+	  powers of 2. So if DUT_TEST_MIN_IODEPTH is 1028 and max is 4096 there
+	  will be tests for 1024, 2048 and 4096.
+
+	  If not sure what to set on nvme devices consider setting this to
+	  the hardware Maximum Queue Entries Supported (MQES). You can get
+	  this as follows for say /dev/nvme0:
+
+	  nvme show-regs -H /dev/nvme0 | egrep "MQES"
+
+	  For more details on iodepth refer to the fio(1) manpage.
+
+endif
+
+config DUT_IODEPTH_FOCUS_RANGE
+	bool "IO depth focus range"
+	default y
+	help
+	  There are a series of specialized focus tests which work on a range
+	  of fio iodepth=x values. These are not generic tests but rather
+	  specialized tests to help zero in on set of iodepth values once you
+	  already have identified the sweet spot ranges for iodepth. You must
+	  set this focus range to enable such tests.
+
+	  For tests that require this range, a test is created for each iodepth
+	  number in between the minimum and maximum value, by powers of 2. So if
+	  DUT_TEST_MIN_FOCUS_IODEPTH is 1028 and max is 4096 there will be tests
+	  for 1024, 2048 and 4096.
+
+if DUT_IODEPTH_FOCUS_RANGE
+
+config DUT_TEST_MIN_FOCUS_IODEPTH
+	string "Minimum focus IO Depth to test"
+	default "256"
+	help
+	  This sets the mimimum focus value to be used in tests for the fio
+	  iodepth. For instance, if set to 256, the mimimum value which will
+	  be used for iodepth for focus tests will be iodepth=256.
+
+	  The fio iodepth defines the number I/O units to keep in flight against
+	  the file. There are number of tests in this tests suite which are
+	  created with different iodepth size on each test. This value will set
+	  the smallest value to consider testing for iodepth.
+
+	  For more details on iodepth refer to the fio(1) manpage.
+
+config DUT_TEST_MAX_FOCUS_IODEPTH
+	string "Maximum focus IO Depth to test"
+	default "4096"
+	help
+	  This sets the maximum focus value to be used in tests for the fio
+	  iodepth. For instance, if set to 4096, the maximum value which will be
+	  be used for iodepth will be iodepth=4096.
+
+	  The fio iodepth defines the number I/O units to keep in flight against
+	  the file. There are number of tests in this tests suite which are
+	  created with different iodepth size on each test. This value will set
+	  the smallest value to consider testing for iodepth. A test is created
+	  for each iodepth number in between the minimum and maximum value, by
+	  powers of 2. So if DUT_TEST_MIN_IODEPTH is 1028 and max is 4096 there
+	  will be tests for 1024, 2048 and 4096.
+
+	  If not sure what to set on nvme devices consider setting this to
+	  the hardware Maximum Queue Entries Supported (MQES). You can get
+	  this as follows for say /dev/nvme0:
+
+	  nvme show-regs -H /dev/nvme0 | egrep "MQES"
+
+	  For more details on iodepth refer to the fio(1) manpage.
+endif
+
+config DUT_RUNTIME
+	string "Runtime"
+	default "4m" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_FAST_RUNTIME if DEBUG_QUICK_DEFAULTS
+	help
+	  If 4m is set, this sets the fio runtime=4m value -- 4 minutes.
+
+	  Tell fio to terminate processing after the specified period of time.
+	  It can be quite hard to determine for how long a specified job will
+	  run, so this parameter is handy to cap the total runtime to a given
+	  time. When the unit is omitted, the value is interpreted in seconds.
+
+	  Supported input values are can be in hours, minutes, or seconds.
+
+	  For more details on runtime refer to the fio(1) manpage.
+
+config DUT_IODEPTH_EXTRA_PARAMS
+	bool "Advanced DUT iodeptch configuration options"
+	default n
+	help
+	  There are a series of tests which help you focus on a set of different
+	  iodepth options. If you want to explore different iodepth tests
+	  options enable this so you can gain access to enable those specific
+	  tests.
+
+	  If not sure yet, just disable this for now and run the basic tests
+	  first.
+
+if DUT_IODEPTH_EXTRA_PARAMS
+
+config DUT_FOCUS_IODEPTH
+	string "Focus iodepth"
+	default "128"
+	help
+	  If 128 is set, this sets the fio iodepth=128 for many tests.
+
+	  If you already have an idea of an iodepth which is giving you best
+	  performance results you should set this value to that. It will allow
+	  you to run a series of tests which focus on this iodepth.
+
+	  For more details on iodepth refer to the fio(1) manpage.
+
+config DUT_FOCUS_IODEPTH_BATCH_SUBMIT
+	string "Focus iodepth batch submit"
+	default "4096"
+	help
+	  If 4096 is set, this sets the fio iodepth_batch_submit=4096 for many
+	  tests.
+
+	  If you already have an idea of an iodepth_batch_submit which is giving
+	  you best performance results you should set this value to that. It
+	  will allow you to run a series of tests which focus on this
+	  iodepth_batch_submit value.
+
+	  For more details on iodepth_batch_submit refer to the fio(1) manpage.
+
+config DUT_IODEPTH_BATCH_SUBMIT_RANGE
+	bool "DUT iodeptch batch submit range"
+	default n
+	help
+	  There are a series of tests which help you focus on a set of different
+	  iodepth_batch_submit values. If you want to explore different these
+	  different tests you must specify a range.
+
+	  Tests that use this range will create a test per for each power of 2
+	  iodepth_batch_submit value in between DUT_IODEPTH_BATCH_SUBMIT_MIN and
+	  DUT_IODEPTH_BATCH_SUBMIT_MAX. For instance if the minimum is 64 and
+	  the max is 1024, we'd have tests for 64, 128, 256, 512, and 1024.
+
+if DUT_IODEPTH_BATCH_SUBMIT_RANGE
+
+config DUT_IODEPTH_BATCH_SUBMIT_MIN
+	string "Minimum IO depth batch submit"
+	default "32"
+	help
+	  If 32 is set, fio will use iodepth_batch_submit=32 as the smallest
+	  value for a series of tests.
+
+	  There are a series of tests which require the mimimum and maximum set.
+
+	  iodepth_batch_submit defines how many pieces of I/O to submit at once.
+	  It defaults to 1 which means that we submit each I/O as soon as it is
+	  available, but can be raised to submit bigger batches of I/O at the
+	  time. If it is set to 0 the iodepth value will be used.
+
+	  For more details on iodepth_batch_submit refer to the fio(1) manpage.
+
+config DUT_IODEPTH_BATCH_SUBMIT_MAX
+	string "Maximum IO depth batch submit"
+	default "4096"
+	help
+	  If 4096 is set, fio will use iodepth_batch_submit=4096 as the largest
+	  value for a series of tests.
+
+	  There are a series of tests which require the mimimum and maximum set.
+
+	  iodepth_batch_submit defines how many pieces of I/O to submit at once.
+	  It defaults to 1 which means that we submit each I/O as soon as it is
+	  available, but can be raised to submit bigger batches of I/O at the
+	  time. If it is set to 0 the iodepth value will be used.
+
+	  For more details on iodepth_batch_submit refer to the fio(1) manpage.
+
+endif
+
+config DUT_IODEPTH_BATCH_COMPLETE_RANGE
+	bool "DUT iodeptch batch complete range"
+	default n
+	help
+	  There are a series of tests allow you to customize the fio values for
+	  iodepth_batch_complete_min and iodepth_batch_complete_max. Enable this
+	  option to set those values.
+
+	  This range does *not* add a test per each power of 2 value in the
+	  range. The iodepth_batch_complete_min and iodepth_batch_complete_max
+	  fio values will simply be set in tests which let you customize it.
+
+if DUT_IODEPTH_BATCH_COMPLETE_RANGE
+
+config DUT_IODEPTH_BATCH_COMPLETE_MIN
+	string "Minimum IO depth batch complete"
+	default "1"
+	help
+	  If 1 is set, fio will use iodepth_batch_complete_min=1 for a series of
+	  tests.
+
+	  There are a series of tests which require the mimimum and maximum set.
+
+	  iodepth_batch_complete_min defines how many pieces of I/O to
+	  retrieve at once. It defaults to 1 which means that we'll ask for a
+	  minimum of 1 I/O in the retrieval process from the kernel.
+
+	  For more details on iodepth_batch_complete_min refer to the fio(1)
+	  manpage.
+
+config DUT_IODEPTH_BATCH_COMPLETE_MAX
+	string "Maximum IO depth batch complete"
+	default "4096"
+	help
+	  If 4096 is set, fio will use iodepth_batch_complete_max=4096 for a
+	  series of tests.
+
+	  There are a series of tests which require the mimimum and maximum set.
+
+	  iodepth_batch_complete_max defines maximum pieces of I/O to retrieve
+	  at once.
+
+	  For more details on iodepth_batch_complete_max refer to the fio(1)
+	  manpage.
+endif
+endif
+
+config DUT_NUMJOBS_RANGE
+	bool "DUT number of jobs range"
+	default y
+	help
+	  This sets the range to use for the fio value jobs=x.
+
+	  There are a series of tests which allow you to run different tests
+	  with the values for jobs set to different values. A test would be
+	  created for each power of 2 number of jobs. For instance if you set
+	  DUT_NUMJOBS_MIN 16 and DUT_NUMJOBS_MAX to 64 then three tests would
+	  be created for each value of jobs=x, 16, 32, 64.
+
+if DUT_NUMJOBS_RANGE
+
+config DUT_NUMJOBS_MIN
+	string "Minimum jobs / threads to test for"
+	default "1"
+	help
+	  If 1 is set, fio will use jobs=32 as the smallest value for a series
+	  of tests.
+
+	  There are a series of tests which require the mimimum and maximum set.
+
+	  fio jobs defines how many processes to spaw for IO work, by default
+	  this framework enables pthread implementation (thread on each fio
+	  file).
+
+	  For more details on jobs refer to the fio(1) manpage.
+
+config DUT_NUMJOBS_MAX
+	string "Maximum jobs / threads to test for"
+	default "64"
+	help
+	  If 64 is set, fio will use jobs=64 as the largest value for a series
+	  of tests. Note that setting this to a large value will very likely
+	  end up with some tests to fail. One example failure may be due to
+	  running out of the maximum number of processes calling the io_setup
+	  system call with active aio contexts (/proc/sys/fs/aio-max-nr), in
+	  such cases Linux will fail with EAGAIN.
+
+	  There are a series of tests which require the mimimum and maximum set.
+
+	  fio jobs defines how many processes to spaw for IO work, by default
+	  this framework enables pthread implementation (thread on each fio
+	  file).
+
+	  For more details on jobs refer to the fio(1) manpage.
+endif
+
+endmenu

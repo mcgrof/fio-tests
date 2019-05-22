@@ -1,0 +1,109 @@
+config DEBUG_FAST_RUNTIME
+	string "Fast test and pre-condition runtime value"
+	default "1s"
+	help
+	  If 1s is set, this sets the fio runtime=1s value -- 1 second for
+	  both tests and pre-conditioning.
+
+	  If you want to debug run time you may wish to enable this to force
+	  runtime for tests and pre-conditioning to be reduced to a bare
+	  minimum.
+
+	  Tell fio to terminate pre-conditioning after the specified period
+	  of time. Use a small value when debugging real runs.
+
+	  By default pre-conditioning will run until it determines the drive
+	  is ready. You can use this to override this mechanism and stop it
+	  earlier.
+
+	  Supported input values are can be in hours, minutes, or seconds.
+
+	  For more details on runtime refer to the fio(1) manpage.
+
+config DEBUG_ACTIVE_RANGE
+	string "Debug active range setting"
+	default "4096k"
+	help
+	  This reduces the active range of the drive when debugging to a short
+	  value. This will ensure only this amount of the drive is used. This is
+	  useful to mimic a quick full drive pre-fill.
+
+config DEBUG_SHORT_LOOP
+	bool "Shorten prefill loop count"
+	default y
+	help
+	  If enabled will force a short prefill loop.
+
+config DEBUG_ROUND_CRITICAL_LIMIT
+	string "Steady state round critical limit"
+	default "1"
+	help
+	  The default maximum amount of rounds to run the workload dependent
+	  pre-conditioning when quick defaults are enabled.
+
+config DEBUG_ROUND_MIN_COUNT
+	string "Steady state round minimum count"
+	default "1"
+	help
+	  The default minumum amount of rounds which are needed to succeed
+	  for SNIA tests when in debug mode.
+
+choice
+	prompt "Quick steady state difficulty level"
+	default DEBUG_EASY_STEADY_STATE
+
+config DEBUG_EASY_STEADY_STATE
+	bool "Force easy values for attaining steady state"
+	help
+	  If enabled we will override a the steady state requirements to try to
+	  ensure we succeed attaining steady state.
+
+config DEBUG_DIFFICULT_STEADY_STATE
+	bool "Force difficult values for attaining steady state"
+	help
+	  If enabled we will override a the steady state requirements to try to
+	  ensure we fail attaining steady state. Failing is not ensured, but it
+	  will be very difficult to succeed.
+
+endchoice
+
+if DEBUG_EASY_STEADY_STATE
+
+config DEBUG_EASY_SS_MEAN_LIMIT
+	string "Easy steady state - limit boundary requirement"
+	default "100%"
+	help
+	  This sets the limit within which all measured IOPS/throughout must be
+	  in from the means IOPS/throughput observed. This sets both the
+	  ss=iops and ss=bw value for fio with the goal to make it easy to
+	  attain steady state.
+
+config DEBUG_EASY_SS_SLOPE
+	string "Easy steady state - slope requirement"
+	default "100%"
+	help
+	  This sets the least squares regression slope requirement. This sets
+	  both the ss:bw_slope and ss:iops_slope value for fio with the goal to
+	  make it easy to attain steady state.
+
+endif
+
+if DEBUG_DIFFICULT_STEADY_STATE
+
+config DEBUG_DIFFICULT_SS_MEAN_LIMIT
+	string "Difficult steady state - limit boundary requirement"
+	default "0.1%"
+	help
+	  This sets the limit within which all measured IOPS/throughout must be
+	  in from the means IOPS/throughput observed. This sets both the
+	  ss=iops and ss=bw value for fio with the goal to make it difficult to
+	  attain steady state.
+
+config DEBUG_DIFFICULT_SS_SLOPE
+	string "Difficult steady state - slope requirement"
+	default "0.0001%"
+	help
+	  This sets the least squares regression slope requirement. This sets
+	  both the ss:bw_slope and ss:iops_slope value for fio with thge goal to
+	  make it difficult to attain steady state.
+endif

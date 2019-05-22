@@ -1,0 +1,8 @@
+config MAX_IOBATCH_SINGLE
+	bool "Max iodepth batch submit tests - single job"
+	depends on DUT_IODEPTH_RANGE
+	depends on DUT_IODEPTH_EXTRA_PARAMS
+	depends on DUT_IODEPTH_BATCH_COMPLETE_RANGE
+	help
+	  This enables tests using the max batch submit we have deemed
+	  appropriate, using a single job for all iodepths possible.

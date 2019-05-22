@@ -1,0 +1,62 @@
+menu "SNIA interpretation tests"
+
+config SNIA_TESTS
+	bool "Solid State Storage (SSS) Performance Tests Specification (PTS)"
+	default n
+	help
+	  SNIA puts out a set of recommended tests and along with these tests
+	  a series of precise pre-conditioning methods to use for each test.
+	  The SNIA PTS is intended to be used to obtain reliable and comparative
+	  measurement of NAND Flash based solid state storage devices (SSDs).
+	  Each test focuses on extracting certain information about performance
+	  and so each test has its own set of different pre-conditioning
+	  strategies to ensure different components of the drive are stressed
+	  to ensure to obtain reliable performance metrics.
+
+	  Say Yes to run the SNIA tests.
+
+if SNIA_TESTS
+
+config SELECT_SNIA_SSS_PTS
+	def_bool y
+
+choice
+	prompt "SSS PTS Version to use"
+	default SNIA_SSS_PTS_2_0_1
+
+config SNIA_SSS_PTS_2_0_1
+	bool "SSS PTS Version 2.0.1"
+	help
+	  This relies on the SNIA SSS PTS Version 2.0.1:
+	  https://www.snia.org/sites/default/files/technical_work/PTS/SSS_PTS_2.0.1.pdf
+
+endchoice
+
+if SNIA_SSS_PTS_2_0_1
+
+config SNIA_IOPS
+	bool "Buddy Holly test - SNIA IOPS test"
+	default y
+	help
+	  The Buddy Holly test is our interpretation of testing for IOPS as
+	  per SNIA's recommendations.
+
+source "tests/0005-snia/0001-iops/Kconfig"
+
+#config SNIA_THROUGHPUT
+#	bool "Elvis Presley test - SNIA throughput test"
+#	default y
+#	help
+#	  The Elvis Presley test is our interpretation of testing for throughput
+#	  as per SNIA's recommendations.
+
+#config SNIA_LATENCY
+#	bool "Some cool 50's or 60's rock artist name - SNIA latency test"
+#	default y
+#	help
+#	  fio lacks steady-state support for latency, go work on that first!
+
+endif
+
+endif
+endmenu

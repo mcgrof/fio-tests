@@ -1,0 +1,24 @@
+menu "Debugging"
+
+config DEBUG
+	bool "Enable debugging options"
+	default n
+	help
+	  This lets you enable certain debugging options.
+
+if DEBUG
+
+config DEBUG_QUICK_DEFAULTS
+	bool "Force all tests and pre-condition to run fast"
+	default n
+	help
+	  If enabled we will override a series of default values to alternatives
+	  to ensure fast tests for the entire fio-tests framework.
+
+if DEBUG_QUICK_DEFAULTS
+source scripts/Kconfig.debug.quick
+endif
+
+endif
+
+endmenu

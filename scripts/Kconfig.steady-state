@@ -1,0 +1,70 @@
+menu "Generic steady state provisioning"
+
+config STEADY_STATE_PROVISIONING
+	bool "Steady state provisioning prior to generic tests"
+	default y
+	help
+	  Certain groups recommend and advise for certain provisioning work to
+	  be performed on storage devices prior to doing any performance
+	  analysis. This to ensure one can reproduce performance tests and
+	  achieve consistent and reliable test benchmark numbers as often
+	  published by manufacturers or test teams.
+
+	  Getting drives to such state is referred to as "Steady State".
+	  Methodologies to reach steady state provisioning vary depending on
+	  storage technologies. Likewise, recommendations as to exactly how to
+	  reach steady state may vary depending on goals and objectives. Note
+	  that certain technologies may not require certain work items for
+	  pre-conditioning as well.
+
+	  The Storage Networking Industry Association (SNIA) put together
+	  recommendations on procedures to follow for pre-conditioning and
+	  testing solid state storage devices [0]. Each major SNIA test however
+	  is designed to focus on measuring specific performance
+	  characteristics. fio-tests supports a few interpretations of SNIA
+	  tests as methods to attain steady-state prior to running the enabled
+	  generic tests. A generic method, the Santa Clara method, is also
+	  supported.
+
+	  Enabling this option will mean you will select a method for attaining
+	  steady state prior to running generic tests.
+
+config FORCE_PRECONDITION
+	bool "Force steady state work for all drives"
+	default n
+	help
+	  Certain drives achieve steady state Fresh Out of the Box (FOB), they
+	  do not require any pre-conditioning. An example are the Intel Optane
+	  drives. By default fio-tests will check against a list of drives
+	  which are known to not require pre-conditioning and skip it. If
+	  you enable this option fio-tests will force pre-conditioning for
+	  those drives as well.
+
+	  You should leave this option disabled unless you want to confirm
+	  the FOB steady-state nature of these drives. This may also be
+	  useful if you want to use the results to reach steady-state with
+	  these drives as the ideal criteria for steady state for other drives.
+
+config ENERGIZED_STEADY_STATE
+	bool "Perform energized steady state check"
+	default y
+	help
+	  Certain newer technology drives do not require pre-conditioning FOB
+	  but do require the drives to be energized for a period of time.
+	  If the drives are de-engerized for a few weeks the drives can get
+	  into de-engerized state and won't allow you to get the expected
+	  steady state performance. Each drive may have its own requirement,
+	  so this is drive / technology specific.
+
+	  Enabling this option will ensure to wait drives are engergized
+	  for at least the recommended period of time prior to allowing
+	  performance benchmarking.
+
+if STEADY_STATE_PROVISIONING
+
+source "scripts/Kconfig.purge"
+source "scripts/Kconfig.pre-condition"
+
+endif
+
+endmenu

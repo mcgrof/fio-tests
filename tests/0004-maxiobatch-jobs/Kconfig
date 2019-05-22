@@ -1,0 +1,10 @@
+config MAX_IOBATCH_JOBS
+	bool "Max iodepth batch submit tests - multiple job"
+	depends on DUT_IODEPTH_EXTRA_PARAMS
+	depends on DUT_IODEPTH_BATCH_COMPLETE_RANGE
+	depends on DUT_IODEPTH_FOCUS_RANGE
+	depends on DUT_NUMJOBS_RANGE
+	help
+	  This enables tests using the max batch submit we have deemed
+	  appropriate, using a multiple job for a series of more appropriate
+	  iodepths.

@@ -1,0 +1,242 @@
+config PURGING
+	bool "Enable purging"
+	default y
+	help
+	  Purging aims to put the device into a state in which subsequent writes
+	  execute, as closely as possible, as if the device had never been used
+	  and does not contain any valid data. Different technologies require
+	  different mechanisms to purge. Additionally vendors may differ
+	  in exact methodologies used to purge their own devices.
+
+	  Enabling this feature will enable you to select which type of
+	  purging features to enable.
+
+if PURGING
+
+config PURGING_ATA
+	bool "ATA Purging"
+	depends on BROKEN
+	default n
+	help
+	  TODO - this feature is not yet implemented.
+
+	  This should eventually implement security erase, sanitize block device
+	  (block erase ext).
+
+config PURGING_SCSI
+	bool "SCSI Purging"
+	depends on BROKEN
+	default n
+	help
+	  TODO - this feature is not yet implemented.
+
+	  This should eventually implement SCSI format unit.
+
+config PURGING_NVME
+	bool "NVMe purging"
+	default y
+	help
+	  Enable this to allow purging of NVMe devices. You will be required
+	  to have installed nvme-cli.
+
+if PURGING_NVME
+
+config PURGE_NVME_PURGE_VERIFY
+	bool "Verify NVMe purge settings"
+	default y
+	help
+	  If enabled nvme-cli will be used first to query the device to
+	  ensure that the options you have enabled match the device
+	  capabilities. Without this, upon failure you will just get an
+	  error and not be able to tell why a purge may have failed.
+
+	  If you are not sure leave this enabled.
+
+config PURGE_NSID_SPECIFIC
+	bool "Override default NVMe namespace ID to format"
+	default n
+	help
+	  If enabled you can override the default namespace idused when issuing
+	  the nvme format command:
+
+	     nvme format ----namespace-id=x
+
+	  If you are not sure leave this disabled.
+
+config PURGE_NSID
+	string "NVMe namespace id to issue format to (nsid)"
+	depends on PURGE_NSID_SPECIFIC
+	default "1"
+	help
+	  This sets the namespace id to use when formating the NVMe device.
+	  For instance setting this value to 1 will ensure we use:
+
+	     nvme format --namespace-id=1
+
+config PURGE_LBAF_SPECIFIC
+	bool "Override default NVMe LBA format to use when formatting"
+	default n
+	help
+	  This lets you override the default LBA format to use when formatting
+	  an NVMe device. Devices can support differente LBA formats, to view
+	  the different LBA formats your device supports use:
+
+	     nvme id-ns /dev/nvme0n1 -H | grep "LBA Format"
+
+	  If you are not sure leave this disabled.
+
+config PURGE_LBAF
+	string "NVMe LBA format to use"
+	depends on PURGE_LBAF_SPECIFIC
+	default "0"
+	help
+	  This defines the LBA format to apply to the NVMe media. To see which
+	  types of formats are available look at the identify namespace command.
+	  This defaults to 0. This will affect this parameter when issuing a
+	  format to the device, if the value is x:
+
+	     nvme format --lbaf=x
+
+	  NVMe formats can vary performance, the relative expected performance
+	  is annotated on the namespace identify listing, these performance
+	  metrics assume an IO depth of 32 and 4k base size. To list them
+	  issue:
+
+	     nvme id-ns /dev/nvme0n1 -H | grep "LBA Format"
+
+	  NVMe formats can be also relevant when considering Protection
+	  Information. If Protection Information is enabled and metadata
+	  formats are used with more than 8 bytes, and if the Protection
+	  Information Location (pil) is located within the end of the metadata
+	  then the CRC covers all the metadata bytes up to but excluding these
+	  last 8 bytes.
+
+config PURGE_MS_SPECIFIC
+	bool "Override default NVMe Metadata settings when formatting"
+	default n
+	help
+	  This lets you override the default NVMe Meta data format to use when
+	  formatting an NVMe device.
+
+config PURGE_MS
+	string "NVMe Metadata Setting"
+	depends on PURGE_MS_SPECIFIC
+	default "0"
+	help
+	  This defines the Metadata Setting to use when formatting the NVMe
+	  device. Set this to 1 if you want the metadata to be transferred
+	  as part of an extended data LBA. The default setting of 0 will
+	  ensure metadata is transferred as part of a separate buffer. The
+	  metadata used may include or not Protection Information -- for details
+	  on that refer to CONFIG_PURGE_PI.
+
+	  If set to a values of x this will affect this command:
+
+	     nvme format --ms=x
+
+config PURGE_RESET
+	bool "Reset after successful format"
+	default n
+	help
+	  Enable this to ensure we reset the NVMe device after a successful
+	  format. This enables the -r option to nvme format:
+
+	    nvme format -r
+
+	  Disable this unless you are sure you need this.
+
+config PURGE_TIMEOUT_SET
+	bool "Override default format timeout"
+	default n
+	help
+	  Enable this to allow you to override the default timeout value when
+	  formatting an NVMe device.
+
+config PURGE_TIMEOUT_MS
+	string "Timeout value in milliseconds"
+	depends on PURGE_TIMEOUT_SET
+	default "600000"
+	help
+	  Defined in milliseconds.
+
+config SELECT_PURGE_SES
+	def_bool y
+
+choice
+	prompt "NVMe Secure Erase Setting (SES)"
+	default PURGE_SES_1 if !DEBUG_QUICK_DEFAULTS
+	default PURGE_SES_0 if DEBUG_QUICK_DEFAULTS
+
+config PURGE_SES_0
+	bool "ses=0 no secure erase"
+	help
+	  This will use `nvme format --ses=0` when purging.
+	  No secure erase operation will requested.
+
+config PURGE_SES_1
+	bool "ses=1 User data erase"
+	help
+	  This will use `nvme format --ses=1` when purging.
+	  User Data Erase: All user data shall be erased, contents of the
+	  user data after the erase is indeterminate (e.g., the user data may
+	  be zero filled, one sequenty or randomly. If unsure, choose this
+	  option (ses=1 User data erase) over any other.
+
+config PURGE_SES_2
+	bool "ses=2 Cryptographic Erase"
+	help
+	  This will use `nvme format --ses=2` when purging.
+	  Cryptographic Erase: All user data shall be erased cryptographically.
+	  This is accomplished by deleting the encryption key.
+
+endchoice
+
+config PURGE_PI
+	bool "Protection Information"
+	default n
+	help
+	  Enable this to enable Protection Information. Enablign this option
+	  will ensure we use use `nvme format --pi=1` when purging. Protection
+	  information is enabled additional information is added to the logical
+	  block (e.g. CRC) that may be evaluated by the controller and/or host
+	  software to determine the integrity of the block. This provides robust
+	  data protection from an application to the NVMe media and back to the
+	  application itself.
+
+	  The LBA format used can alter the behaviour of what the CRC protects.
+	  For more details refer to CONFIG_PURGE_LBAF or the 8.3 of the NVMe
+	  revision.
+
+	  The overhead of enabling this feature should be measured before
+	  enabling it.
+
+if PURGE_PI
+
+config SELECT_PURGE_PIL
+	def_bool y
+	depends on PURGE_PI
+
+choice
+	prompt "NVMe Protection Information Location (pil)"
+	default PURGE_PIL_0
+
+config PURGE_PIL_0
+	bool "pil=0 place PI as the last 8 bytes of metatdata"
+	help
+	  This will use `nvme format --pil=0` when purging.
+	  This places the protection information as the last 8 bytes of the
+	  the metadata.
+
+config PURGE_PIL_1
+	bool "pil=1 place PI as the first 8 bytes of metatdata"
+	help
+	  This will use `nvme format --pil=1` when purging.
+	  This places the protection information as the first 8 bytes of the
+	  the metadata. This is always the default if protection information
+	  is enabled.
+
+endchoice
+endif
+endif
+
+endif

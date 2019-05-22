@@ -1,0 +1,82 @@
+config PRECONDITIONING
+	bool "Enable pre-conditioning"
+	default y
+	help
+	  Pre-conditioning facilitates convergences to Steady State, when one
+	  can reliably capture performance metrics. Pre-conditioning strategies
+	  vary, and for certain drives its no longer required, however other
+	  requiremets may be imposed. Enable this option to allow you to
+	  pre-conditiong drives prior to running the generic tests (non-SNIA).
+
+
+	  Enabling this will keep a state machine of our pre-conditioning state
+	  to ensure that we follow the above algorithm for each test. You can
+	  also configure different parameterse for pre-conditioning.
+
+	  Say Yes here unless you are certain you don't need any of this.
+
+if PRECONDITIONING
+
+config SELECT_PRECONDITION_METHOD
+	def_bool y
+
+choice
+	prompt "Pre-conditioning method"
+	default PRECONDITION_GENERIC_SC
+
+config PRECONDITION_GENERIC_SC
+	bool "Pre-condition using Santa Clara method"
+	help
+	  The Santa Clara method is a concise method to try to achieve steady
+	  state on drives.
+
+	  The Sant Clara method consists of the following:
+
+	     0) Purge device
+	     1) Pre-condition for sequential writes
+	     2) Run sequential workloads
+	     3) Pre-condition for random writes
+	     4) Run random workloads
+	     5) Run mixed workloads
+
+	  Since we provide a giant collection of tests and split up testing by
+	  tests, prior to running any tests we will perform steps 0-1) and then
+	  move on to tests all sequential workloads. After that we will move on
+	  to step 3), and then move on to test all random worklods, followed
+	  at last by mixed workloads.
+
+	  This will use fio to first pre-fill the drive either sequentially or
+	  randomly, depending on the target test. Then the drive will be
+	  pre-conditioned to ensure that certain parameters are steady within
+	  the criteria you define.
+
+	  By defaut, steady state is attained if and only if both IOPS and
+	  throughput steady state performance criteria are sustained for 15
+	  minutes each.
+
+	  If unsure, choose this option (Pre-condition using the Santa Clara
+	  method) over any other.
+
+if SNIA_IOPS
+
+config PRECONDITION_SNIA_IOPS
+	bool "Pre-condition using SNIA's IOPS test"
+	help
+	  Use SNIA's IOPS test to pre-condition the drive.
+
+	  This pre-conditioning method is specific towards stabilizing IOPS
+	  performance.
+
+	  If unsure, use the generic method instead (Pre-condition using
+	  the Santa Clara method).
+endif
+
+endchoice
+
+if PRECONDITION_GENERIC_SC
+
+source "scripts/Kconfig.santa_clara"
+
+endif # PRECONDITION_GENERIC_SC
+
+endif # PRECONDITIONING

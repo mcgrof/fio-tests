@@ -1,0 +1,28 @@
+#
+# For a description of the syntax of this configuration file, see:
+# https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt
+
+mainmenu "$(PROJECT) $(PROJECTRELEASE)"
+
+config ENTERPRISE_SSD_TESTING
+	bool "Enterprise SSD testing"
+	default y
+	help
+	  Enable this if you are testing for enterprise Solid State Storage
+	  devices. Disable this if you are testing a regular client storage
+	  device (home, office, laptop use).
+
+	  This option will enable / disable certain features and also modify
+	  default values used for pre-conditioning and SNIA tests, if enabled.
+	  Affected test parameters:
+
+	  - Write caches will be disabled for enterprise, enabled for client
+	  - For enterprise: queue depth = 32, jobs = 4
+	  - For client: queue depth = 16, jobs = 2
+	  - Active range changes
+
+source "tests/0005-snia/Kconfig"
+source "scripts/Kconfig.steady-state"
+source "scripts/Kconfig.dut"
+source "tests/Kconfig"
+source "scripts/Kconfig.debug"

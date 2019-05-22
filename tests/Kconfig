@@ -1,0 +1,48 @@
+menu "Performance evaluation"
+
+menu "Test Profiles"
+config PROFILE_SEQREAD
+	bool "Sequential read"
+	help
+	  This enables all sequential read tests for the different test
+	  targets allowed.
+
+config PROFILE_RANDREAD
+	bool "Random read"
+	help
+	  This enables all random read tests for the different test
+	  targets allowed.
+
+config PROFILE_SEQWRITE
+	bool "Sequential write"
+	help
+	  This enables all sequential write tests for all the different test
+	  targets allowed.
+
+config PROFILE_RANDWRITE
+	bool "Random write"
+	help
+	  This enables all random write tests for the different test
+	  targets allowed.
+
+config PROFILE_RANDWRITE_70_30
+	bool "Random write 70 % read 30%"
+	help
+	  This enables all random mixture write 70 % / 30 % read tests for the
+	  different test targets allowed.
+
+config PROFILE_RANDWRITE_97_3
+	bool "Random write 97 % read 3%"
+	help
+	  This enables all random mixture write 97 % / 3 % read tests for the
+	  different test targets allowed.
+endmenu
+
+menu "Test Targets"
+source "tests/0001-basic-tests/Kconfig"
+source "tests/0002-iobatch/Kconfig"
+source "tests/0003-maxiobatch-single-job/Kconfig"
+source "tests/0004-maxiobatch-jobs/Kconfig"
+endmenu
+
+endmenu

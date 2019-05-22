@@ -1,0 +1,22 @@
+#
+# Generated files
+#
+*.moc
+
+# This is generated
+zconf.lex.c
+
+#
+# configuration programs
+#
+conf
+mconf
+nconf
+qconf
+gconf
+
+zconf.tab.c
+
+*.o
+
+.mconf-cfg

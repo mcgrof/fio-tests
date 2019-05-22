@@ -1,0 +1,67 @@
+Immediate
+----------
+
+Make each SNIA test round use its own directory for its own set of files.
+This will be needed to be able to later show for instance convergence
+to steady state from graphs.
+
+Medium term
+-----------
+
+CONFIG_ENERGIZED_STEADY_STATE=y is supported currently through uptime, and
+assuming a file being present means the device is powered on. This is not
+true. A system can be powered on for a long time, and a new driver to support
+the device only added later. Addressing this seems complex and may not be
+easily possible, we accept these risks today by assuming a fully deployed OS
+on bootup for now, but this could use some love long term to figure out how
+we actually verify this properly. If nvme drives had run time power management
+enabled, they don't, we could use /sys/block/nvme0n1/power/runtime_active_time
+for instance, as it reflects the amount of active seconds. If always powered
+on since boot, this would match close to the value or uptime, but since this
+is disabled for nvme we cannot use it. One possibility is to extract this
+implementation and generalize it, so we have two values possible, one for
+power run time, another for actual device power on. Some folks may end up
+arguing however this may be better suited for userspace to track with udev
+events.
+
+Long term
+---------
+
+Add SNIA tests for:
+
+  * throughput (bw)
+  * latency
+
+Consider adding the other SNIA tests.
+
+Review if we do what we should be doing for:
+
+  * Write cache enabled (WCE), Write cache disabled (WCD) for Enterprise and
+    not Enterprise.
+
+Graph Steady State Convergence Plot which shows general visual convergence to
+Steady State by plotting the dependent variable(s) (IOPS, Throughput, etc.) for
+each Round
+
+Graph Steady State Verification Plot shows which shows via either graph or
+table, that the device has reached Steady State per definition 2.1.24, by
+examining dependent variable behavior within the Measurement Window.
+
+Complete graphs for SNIA report (make graph)
+
+Implement gathering all data as per SNIA "Common Reporting Requirements",
+refer to section 5 of SSS PTS 2.0.1
+
+Add a kconfig guard option which if enabled it will *stop* running a series
+of a tests for unit tests if we've already reached a point in which the max
+bandwidth / IOPS gotten worse. This should now be relatively easy since
+scripts/gen-graph.sh average_column() is already implemented. It should just
+be a matter of looking at the *prior* fio file ssv results, computing the
+column average there and if the *current* values are worse we should indicate
+this somehow on the directory with a guard file, so that on the next iteration
+it skips processing the file.
+
+Add idle measurement and visualize it on graphs somehow
+
+Chart width to cover min and max values (min bandwidth, max) after an initial
+period of ramp up time.

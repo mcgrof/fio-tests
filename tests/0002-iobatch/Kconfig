@@ -1,0 +1,12 @@
+config IODEPTH_BATCH
+	bool "IO depth batch test"
+	depends on DUT_IODEPTH_EXTRA_PARAMS
+	depends on DUT_IODEPTH_BATCH_SUBMIT_RANGE
+	depends on DUT_IODEPTH_BATCH_COMPLETE_RANGE
+	depends on DUT_NUMJOBS_RANGE
+	help
+	  This enables basic tests: for each iodepth_batch_complete between
+	  1 .. 4096 for each profile we want to analyze. We each test
+	  iodepth_batch_complete with a range of jobs, between 1 and 64.
+
+	  The goal with this test is to find the ideal max iodepth.

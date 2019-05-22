@@ -1,0 +1,91 @@
+#!/usr/bin/python2.7
+# Note: this script is python2 and python3 compatible.
+
+from __future__ import absolute_import
+from __future__ import print_function
+import os
+import sys
+import json
+import argparse
+import six
+from six.moves import range
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('source',
+                        help='fio json+ output file containing completion '
+                             'latency data')
+    parser.add_argument('--steady-state', const=True, default=False, action="store_const",
+                        help='Parse steady-state information')
+    args = parser.parse_args()
+
+    return args
+
+def parse_ss(jobs, source):
+    if len(jobs) != 2:
+        raise RuntimeError("2 jobs expected")
+
+    wd_precond_mean_job = jobs[0]
+    wd_precond_slope_job = jobs[1]
+
+    ss_mean = wd_precond_mean_job['steadystate']
+    ss_slope = wd_precond_slope_job['steadystate']
+
+    stub, ext = os.path.splitext(source)
+    outfile = stub + '.ss'
+    with open(outfile, 'w') as output:
+        output.write("{0},{1}\n".format(ss_mean['attained'],
+                     ss_slope['attained']))
+
+def main():
+    args = parse_args()
+
+    ini_file = args.source.replace(".json", "")
+
+    if os.stat(args.source).st_size == 0:
+        if os.path.isfile(ini_file + '.BAD'):
+            sys.exit(0)
+
+        if os.path.isfile(ini_file + '.OK'):
+            sys.stdout.write('Unexpected successful fio run with emtpy json file:\n')
+            sys.stdout.write('%(json)s\n' % {"json": args.source})
+            sys.exit(1)
+
+        sys.stdout.write('Unexpected condition: cannot determine if fio completed or not\n')
+        sys.stdout.write('and we have an empty json file:\n')
+        sys.stdout.write('%(json)s' % {"json": args.source})
+        sys.exit(1)
+
+    with open(args.source, 'r') as source:
+        # -nan is not proper json, we use null instead.
+        # XXX: fix this upstream on fio json output
+        fixed_source = source.read().replace("-nan", "null")
+        jsondata = json.loads(fixed_source)
+
+    numjobs = len(jsondata['jobs'])
+    if numjobs < 1:
+        raise RuntimeError("At least 1 job expected")
+
+    jobs = jsondata['jobs']
+
+    if args.steady_state:
+        parse_ss(jobs, args.source)
+
+    job = jobs[0]
+    read = job['read']
+    write = job['write']
+
+    stub, ext = os.path.splitext(args.source)
+    outfile = stub + '.res'
+
+    with open(outfile, 'w') as output:
+        output.write("{0},{1},{2},{3},{4},{5}\n".
+                     format(read['bw_mean'],
+                            read['iops_mean'],
+                            read['clat_ns']['mean'],
+                            write['bw_mean'],
+                            write['iops_mean'],
+                            write['clat_ns']['mean']))
+
+if __name__ == '__main__':
+    main()

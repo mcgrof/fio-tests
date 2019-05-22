@@ -1,0 +1,29 @@
+*.ini
+include
+.config
+.config.old
+
+logs
+provisioning
+
+*.OK
+*.BAD
+*.TIME
+
+*.csv
+*.ssv
+tests/*.svg
+tests/*/*.svg
+tests/*/*/*.svg
+
+*.swp
+
+# The fio output files
+*.json
+*.out
+
+# The parsed fio output files converted to only what we need.
+# The data is also augmented with *other* information not provided
+# by the fio terse output such as tests parameters such as iodepth or
+# number of jobs used.
+*.res

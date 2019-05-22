@@ -1,0 +1,274 @@
+config PRECONDITION_PROVISION_SC
+	bool "Use the Santa Clara method to provision drives"
+	default y
+	help
+	  Enabling this option will force the Santa Clara method to kick in
+	  even if no generic tests were enabled. This can be useful if you are
+	  using fio-tests only to provision drives.
+
+	  Note that if you want to accomplish the same with SNIA tests you can
+	  simply run enable the SNIA tests and not enable any generic tests,
+	  as the SNIA tests are very targetted specific tests in and of
+	  themselves.
+
+if PRECONDITION_PROVISION_SC
+
+choice
+	prompt "Santa Clara provision workload target"
+	default PROVISION_SC_RANDOM
+
+config PROVISION_SC_SEQUENTIAL
+	bool "Provision for sequential workloads"
+	help
+	  If no generic tests are enabled you can select this option so that
+	  the DUT is provisioned against sequential workloads using the Santa
+	  Clara method.
+
+config PROVISION_SC_RANDOM
+	bool "Provision for random workloads"
+	help
+	  If no generic tests are enabled you can select this option so that
+	  the DUT is provisioned against random workloads using the Santa
+	  Clara method.
+
+endchoice
+
+endif # PRECONDITION_PROVISION_SC
+
+# XXX: consider prefixing all these with _SC as these are santa clara method
+# specific. This would only make sense if we will end up adding alternative
+# generic methods.
+config PRECONDITION_STRICT_ORDER
+	bool "Pre-condition using strict order"
+	default y
+	help
+	  Some benchmarks are produced by ensuring that even if you are not
+	  running sequential writes, and want to gather performance benchmarks
+	  only for random workloads, you'd still have to run pre-condioning
+	  for sequential workloads first, and then after you'd perform the
+	  random workload pre-conditioning.
+
+	  This is the default behaviour, if you are sure you don't need this
+	  disable it.
+
+config SANTA_CLARA_ROUND_LIMIT
+	string "Santa Clara steady state round critical limit"
+	default "5" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_ROUND_CRITICAL_LIMIT if DEBUG_QUICK_DEFAULTS
+	help
+	  The maximum amount of rounds to try running the workload dependent
+	  specific steady state fio jobs for pre-conditioning before reaching
+	  the critical limit. For instance, a sequential workload will have
+	  two fio jobs for steady state: iops, and bandwidth. For sequential
+	  workloads a round would consists of running both of these fio files.
+	  We'd have a failure on the round if either of these fail. If the
+	  critical limit is 5, then we'd try running both of these 2 fio
+	  files 5 times before giving up. A successful round of both jobs
+	  would be a success.
+
+	  The limit is considered a hard limit unless the next option is
+	  enabled, which would make this limit a soft limit.
+
+config SANTA_CLARA_ROUND_LIMIT_SOFT
+	bool "Make Santa Clara round critical limit a soft limit"
+	default n
+	help
+	  Make the Santa Clara round critical limit a soft limit. This will
+	  just log the fact that we have surpassed the critical limit, but
+	  continue to loop forever until steady state is reached. Note that this
+	  setting can be dangerous in the sense that you may have your hardware
+	  loop forever if the tests run are not carved out for your hardware. Be
+	  sure to first leave this disabled and ensure you can pass the test
+	  regularly.
+
+config PRECONDITION_BLOCKSIZE
+	string "Pre-condition blocksize"
+	default "128k"
+	help
+	  If 128k is set, this sets the fio bs=128k value for pre-conditioning.
+
+	  The block size in bytes used for I/O units. Default: 128 KiB.
+	  A single value applies to reads, writes, and trims. Comma-separated
+	  values may be specified for reads, writes, and trims. A value not
+	  terminated in a comma applies to subsequent types. Examples:
+
+	  256k        means 256k for reads, writes and trims.
+	  8k,32k      means 8k for reads, 32k for writes and trims.
+	  8k,32k,     means 8k for reads, 32k for writes, and default for trims.
+	  ,8k         means default for reads, 8k for writes and trims.
+	  ,8k,        means default for reads, 8k for writes, and default for trims.
+
+	  For more details on bs refer to the fio(1) manpage.
+
+config PRECONDITION_IODEPTH
+	string "Pre-conditioning iodepth"
+	default "32" if ENTERPRISE_SSD_TESTING
+	default "16" if !ENTERPRISE_SSD_TESTING
+	help
+	  Use this value for the fio iodepth=x for pre-conditioning.
+
+config PRECONDITION_NUMJOBS
+	string "Pre-conditioning number jobs / threads"
+	default "4" if ENTERPRISE_SSD_TESTING
+	default "2" if ENTERPRISE_SSD_TESTING
+	help
+	  If 16 is set, fio will use jobs=16 when pre-conditioning the drive.
+
+	  For more details on jobs refer to the fio(1) manpage.
+
+config PRECONDITION_PREFILL_LOOP
+	int "Pre-condition pre-fill loop count"
+	default "2" if !DEBUG_SHORT_LOOP
+	default "1" if DEBUG_SHORT_LOOP
+	help
+	  How many times to pre-fill the drive with the pre-condition workload.
+	  The current recommended settings is 2. If a value of 2 is used and
+	  you are going to pre-condition for a sequential workload the drive
+	  will be pre-filled twice. If however you however are not going to run
+	  any sequential workload but are going to test a random workload, the
+	  drive will first be pre-filled twice with the sequential workload, and
+	  then twice with the random workload, prior to running the random
+	  workload test.
+
+config PRECONDITION_FIO_STEADY_STATE
+	bool "Pre-condition using fio steady state mechanism after pre-fill"
+	default y
+	help
+	  This will use fio's new steady state mechanism to pre-condition the
+	  drives for specific targets prior to running any generic tests.
+
+	  If unsure, enable this option.
+
+if PRECONDITION_FIO_STEADY_STATE
+
+config PRECONDITION_FIO_STEADY_STATE_IOPS
+	bool "Ensure IOPS is steady before testing"
+	default y
+	help
+	  This will use fio's steady state mechanism to ensure IOPS is steady
+	  for the specified requirements, before allowing tests to go on.
+
+if PRECONDITION_FIO_STEADY_STATE_IOPS
+
+config IOPS_WD_SS_MEAN_LIMIT
+	string "IOPS Steady state - limit boundary requirement"
+	default "20%" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_EASY_SS_MEAN_LIMIT if DEBUG_EASY_STEADY_STATE
+	default DEBUG_DIFFICULT_SS_MEAN_LIMIT if DEBUG_DIFFICULT_STEADY_STATE
+	help
+	  This sets the limit within which all measured IOPS must be in from
+	  the means IOPS observed. This sets the ss=iops value for fio. If set
+	  to 20% this means steady state is attained if all individual IOPS
+	  values must be within 20% of the mean IOPS for the duration of
+	  workload dependent pre-condition setting:
+
+	    * CONFIG_IOPS_WD_SS_MEAN_LIMIT_DUR
+
+	  Instead of a percentage value this can also be an absolute value, for
+	  instance if set to 120, it means that all individual IOPS values must
+	  be within 120 of the mean.
+
+	  For more details on this refer to the Steady state section on the
+	  the fio(1) manpage.
+
+config IOPS_WD_SS_MEAN_LIMIT_DUR
+	string "IOPS Steady state - limit boundary duration"
+	default "15m" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_FAST_RUNTIME if DEBUG_QUICK_DEFAULTS
+	help
+	  This sets the amount of time during which the criteria for steady
+	  state limit boundary requirement (CONFIG_IOPS_WD_SS_MEAN_LIMIT)
+	  must be sustained for.
+
+config IOPS_WD_SS_SLOPE
+	string "IOPS Steady state - slope requirement"
+	default "10%" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_EASY_SS_SLOPE if DEBUG_EASY_STEADY_STATE
+	default DEBUG_DIFFICULT_SS_SLOPE if DEBUG_DIFFICULT_STEADY_STATE
+	help
+	  This sets the least squares regression slope requirement. This sets
+	  the ss:iops_slope value for fio. If set to 10% this means state is
+	  attained if the least squares regression slope for IOPS is maintained
+	  below 10% of  the  mean  IOPS during the duration of the workload
+	  dependent pre-condition setting:
+
+	    * CONFIG_IOPS_WD_SS_SLOPE_DUR
+
+	  For more details on this refer to the Steady state section on the
+	  the fio(1) manpage.
+
+config IOPS_WD_SS_SLOPE_DUR
+	string "IOPS Steady state - slope duration"
+	default "15m" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_FAST_RUNTIME if DEBUG_QUICK_DEFAULTS
+	help
+	  This sets the amount of time during which the criteria for steady
+	  state slope requirement (CONFIG_IOPS_WD_SS_SLOPE)
+	  must be sustained for.
+
+endif
+
+config PRECONDITION_FIO_STEADY_STATE_BW
+	bool "Ensure throughput is steady before testing"
+	default y
+	help
+	  This will use fio's steady state mechanism to ensure throughput is
+	  steady for the specified requirements, before allowing tests to go on.
+
+if PRECONDITION_FIO_STEADY_STATE_BW
+
+config BW_WD_SS_MEAN_LIMIT
+	string "Throughput Steady state - limit boundary requirement"
+	default "20%" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_EASY_SS_MEAN_LIMIT if DEBUG_EASY_STEADY_STATE
+	default DEBUG_DIFFICULT_SS_MEAN_LIMIT if DEBUG_DIFFICULT_STEADY_STATE
+	help
+	  This sets the limit within which all measured throughput must be in
+	  from the means throughput observed. This sets the ss=bw value for fio.
+	  If set to 20% this means steady state is attained if all throughput
+	  values recorded are within 20% of the mean throughput for the duration
+	  of workload dependent pre-condition setting:
+
+	    * CONFIG_BW_WD_SS_MEAN_LIMIT_DUR
+
+	  For more details on this refer to the Steady state section on the
+	  the fio(1) manpage.
+
+config BW_WD_SS_MEAN_LIMIT_DUR
+	string "Throughput Steady state - limit boundary duration"
+	default "15m" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_FAST_RUNTIME if DEBUG_QUICK_DEFAULTS
+	help
+	  This sets the amount of time during which the criteria for steady
+	  state limit boundary requirement (CONFIG_BW_WD_SS_MEAN_LIMIT)
+	  must be sustained for.
+
+config BW_WD_SS_SLOPE
+	string "Throughput Steady state - slope requirement"
+	default "10%" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_EASY_SS_SLOPE if DEBUG_EASY_STEADY_STATE
+	default DEBUG_DIFFICULT_SS_SLOPE if DEBUG_DIFFICULT_STEADY_STATE
+	help
+	  This sets the least squares regression slope requirement. This sets
+	  the ss:bw_slope value for fio. If set to 10% this means state is
+	  attained if the least squares regression slope for throughput is
+	  maintained below 10% of  the  mean  IOPS during the duration of the
+	  workload dependent pre-condition setting:
+
+	    * CONFIG_BW_WD_SS_SLOPE_DUR
+
+	  For more details on this refer to the Steady state section on the
+	  the fio(1) manpage.
+
+config BW_WD_SS_SLOPE_DUR
+	string "Throughput steady state - slope duration"
+	default "15m" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_FAST_RUNTIME if DEBUG_QUICK_DEFAULTS
+	help
+	  This sets the amount of time during which the criteria for steady
+	  state slope requirement (CONFIG_BW_WD_SS_SLOPE)
+	  must be sustained for.
+
+endif # PRECONDITION_FIO_STEADY_STATE_BW
+
+endif # PRECONDITION_FIO_STEADY_STATE

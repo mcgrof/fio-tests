@@ -1,0 +1,180 @@
+if SNIA_IOPS
+
+config SNIA_IOPS_ACTIVE_RANGE
+	string "Active Range"
+	default "100%" if !DEBUG_QUICK_DEFAULTS && ENTERPRISE_SSD_TESTING
+	default "75%" if !DEBUG_QUICK_DEFAULTS && !ENTERPRISE_SSD_TESTING
+	default DEBUG_ACTIVE_RANGE if DEBUG_QUICK_DEFAULTS
+	help
+	  The defines how much of the disk is to be used during tests.
+
+config SNIA_IOPS_IODEPTH
+	string "IO depth set to use"
+	default "32" if ENTERPRISE_SSD_TESTING
+	default "16" if !ENTERPRISE_SSD_TESTING
+	help
+	  The iodepth to use to run both the workload independent
+	  pre-conditioning and the workload dependent pre-conditioning.
+
+config SNIA_IOPS_JOBS
+	string "Number of threads to use"
+	default "4" if ENTERPRISE_SSD_TESTING
+	default "2" if !ENTERPRISE_SSD_TESTING
+	help
+	  The number of jobs / pthread theads to run both the workload
+	  independent pre-conditioning and the workload dependent
+	  pre-conditioning.
+
+menu "IOPS Workload independent pre-conditioning settings"
+
+config SNIA_IOPS_WI_LOOPS
+	string "Loops to use"
+	default "2" if !DEBUG_SHORT_LOOP
+	default "1" if DEBUG_SHORT_LOOP
+	help
+	  The amount of loops to do the pre-fill write.
+
+config SNIA_IOPS_WI_BS
+	string "Base size to use"
+	default "128k"
+	help
+	  The base size to use for workload independent pre-conditioning.
+
+endmenu
+
+menu "IOPS Workload dependent pre-conditioning settings"
+
+config SNIA_IOPS_WD_ROUND_LIMIT
+	string "Steady state round critical limit"
+	default "25" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_ROUND_CRITICAL_LIMIT if DEBUG_QUICK_DEFAULTS
+	help
+	  The maximum amount of rounds to run the workload dependent
+	  pre-conditioning before reaching the critical limit. The critical
+	  limit a hard limit, unless the next option is enabled in the next
+	  configuration step. If set as a hard limit, then we will give up
+	  on workload dependent pre-conditioning and fail as we were not able
+	  to attain it within the bounds of the round limit.
+
+	  A round is defined by a full run of the entire set of tests possible
+	  for each mixed profile defined below, and for each base size. For
+	  instance if the mixed profiles are set to:
+
+	    CONFIG_SNIA_IOPS_WD_RANDRW_STEP=100/0,95/5,65/35,50/50,35/65,5/95,0/100
+
+	  and the base sizes to:
+
+	    CONFIG_SNIA_IOPS_WD_BS_STEP=1024k,128k,64k,32k,16k,8k,4k,512
+
+	  we must then run 7x8 tests, 56 tests. A round then consists of running
+	  the full set of 56 tests.
+
+config SNIA_IOPS_WD_ROUND_MIN_COUNT
+	string "Steady state round minimum criteria"
+	default "5" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_ROUND_MIN_COUNT if DEBUG_QUICK_DEFAULTS
+	help
+	  The minimum amount of rounds which must succeed before we know we have
+	  reached steady state.
+
+config SNIA_IOPS_WD_ROUND_LIMIT_SOFT
+	bool "Make round critical limit a soft limit"
+	default n
+	help
+	  Make the round critical limit a soft limit. This will just log
+	  the fact that we have surpassed the critical limit, but continue to
+	  loop forever until steady state is reached. Note that this setting
+	  can be dangerous in the sense that you may have your hardware loop
+	  forever if the tests run are not carved out for your hardware. Be
+	  sure to first leave this disabled and ensure you can pass the test
+	  regularly.
+
+config SNIA_IOPS_WD_RANDRW_STEP
+	string "Read/write mixed profiles to use"
+	default "100/0,95/5,65/35,50/50,35/65,5/95,0/100"
+	help
+	  The set of read/write mix profiles to use for the workload
+	  dependent pre-conditioning. Comma separated.
+
+config SNIA_IOPS_WD_BS_STEP
+	string "Base sizes to use"
+	default "1024k,128k,64k,32k,16k,8k,4k,512"
+	help
+	  The set of different base sizes to use for the workload
+	  dependent pre-conditioning. Comma separated. If unit is not
+	  specified, bytes are assumed.
+
+config SNIA_IOPS_WD_RUNTIME
+	string "Amount of runtime for each combination test"
+	default "60s" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_FAST_RUNTIME if DEBUG_QUICK_DEFAULTS
+	help
+	  If 60 is set, this sets the fio runtime=60s value -- 1 minute.
+
+	  Tell fio to terminate pre-conditioning after the specified period
+	  of time. Use a small value when debugging real runs.
+
+	  Supported input values are can be in hours, minutes, or seconds.
+
+	  For more details on runtime refer to the fio(1) manpage.
+
+config SNIA_IOPS_WD_SS_MEAN_LIMIT
+	string "Steady state - limit boundary requirement"
+	default "20%" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_EASY_SS_MEAN_LIMIT if DEBUG_EASY_STEADY_STATE
+	default DEBUG_DIFFICULT_SS_MEAN_LIMIT if DEBUG_DIFFICULT_STEADY_STATE
+	help
+	  This sets the limit within which all measured IOPS must be in from
+	  the means IOPS observed. This sets the ss=iops value for fio. If set
+	  to 20% this means steady state is attained if all individual IOPS
+	  values must be within 20% of the mean IOPS for the duration of
+	  workload dependent pre-condition setting:
+
+	    * CONFIG_SNIA_IOPS_WD_SS_MEAN_LIMIT_DUR
+
+	  Instead of a percentage value this can also be an absolute value, for
+	  instance if set to 120, it means that all individual IOPS values must
+	  be within 120 of the mean.
+
+	  For more details on this refer to the Steady state section on the
+	  the fio(1) manpage.
+
+config SNIA_IOPS_WD_SS_MEAN_LIMIT_DUR
+	string "Steady state - limit boundary duration"
+	default "60s" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_FAST_RUNTIME if DEBUG_QUICK_DEFAULTS
+	help
+	  This sets the amount of time during which the criteria for steady
+	  state limit boundary requirement (CONFIG_SNIA_IOPS_WD_SS_MEAN_LIMIT)
+	  must be sustained for. This time must be less than or equal to the
+	  CONFIG_SNIA_IOPS_WD_RUNTIME.
+
+config SNIA_IOPS_WD_SS_SLOPE
+	string "Steady state - slope requirement"
+	default "10%" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_EASY_SS_SLOPE if DEBUG_EASY_STEADY_STATE
+	default DEBUG_DIFFICULT_SS_SLOPE if DEBUG_DIFFICULT_STEADY_STATE
+	help
+	  This sets the least squares regression slope requirement. This sets
+	  the ss:iops_slope value for fio. If set to 10% this means state is
+	  attained if the least squares regression slope for IOPS is maintained
+	  below 10% of  the  mean  IOPS during the duration of the workload
+	  dependent pre-condition setting:
+
+	    * SNIA_IOPS_WD_SS_SLOPE_DUR
+
+	  For more details on this refer to the Steady state section on the
+	  the fio(1) manpage.
+
+config SNIA_IOPS_WD_SS_SLOPE_DUR
+	string "Steady state - slope duration"
+	default "60s" if !DEBUG_QUICK_DEFAULTS
+	default DEBUG_FAST_RUNTIME if DEBUG_QUICK_DEFAULTS
+	help
+	  This sets the amount of time during which the criteria for steady
+	  state slope requirement (CONFIG_SNIA_IOPS_WD_SS_SLOPE)
+	  must be sustained for. This time must be less than or equal to the
+	  CONFIG_SNIA_IOPS_WD_RUNTIME.
+
+endmenu
+endif

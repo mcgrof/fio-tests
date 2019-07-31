@@ -541,7 +541,7 @@ intel_nvme_wait_for_energized_state()
 		# the drive may not have been powered on during that same
 		# period of time. We accept this risk for now by expecting
 		# a fully deployed OS on powerup.
-		ENERGY_TIME=$((24*60*60))
+		ENERGY_TIME=$((3*60*60))
 		TIME_LEFT=$((ENERGY_TIME-UPTIME))
 		if [ $TIME_LEFT -gt 0 ]; then
 			echo "Energized state requires $DRIVE be powered on for at least $ENERGY_TIME"

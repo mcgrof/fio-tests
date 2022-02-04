@@ -1,0 +1,23 @@
+#
+# Generated files
+#
+*.moc
+*.lex.c
+
+#
+# configuration programs
+#
+conf
+mconf
+nconf
+qconf
+gconf
+
+parser.tab.h
+parser.tab.c
+
+*.o.cmd
+
+lxdialog/*.o.cmd
+lxdialog/*.o
+

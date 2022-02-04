@@ -106,4 +106,5 @@ config DEBUG_DIFFICULT_SS_SLOPE
 	  This sets the least squares regression slope requirement. This sets
 	  both the ss:bw_slope and ss:iops_slope value for fio with thge goal to
 	  make it difficult to attain steady state.
+
 endif

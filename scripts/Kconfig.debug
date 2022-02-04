@@ -16,7 +16,7 @@ config DEBUG_QUICK_DEFAULTS
 	  to ensure fast tests for the entire fio-tests framework.
 
 if DEBUG_QUICK_DEFAULTS
-source scripts/Kconfig.debug.quick
+source "scripts/Kconfig.debug.quick"
 endif
 
 endif

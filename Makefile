@@ -26,7 +26,9 @@ export DEV
 
 TOPDIR=./
 
-include scripts/kconfig.Makefile
+export KCONFIG_DIR=$(CURDIR)/scripts/kconfig
+include $(KCONFIG_DIR)/kconfig.Makefile
+include Makefile.subtrees
 
 INCLUDES = -I include/
 CFLAGS += $(INCLUDES)
